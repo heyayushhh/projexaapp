@@ -8,3 +8,12 @@ using the sep28k labels csv file wrote the code to download both the clean and v
 
 27-02-2026
 found a pretrainned model that has 90% accuracy on sep28K data finetunned it to detect imparements in chunks of 3 sec
+
+06-03-2026
+detection_model2.py detects following types of stuttering:
+0 : NoStutteredWords
+1 : WordRep
+2 : SoundRep 
+3 : Prolongation
+4 : Interjection
+5 : Block
