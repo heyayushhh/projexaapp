@@ -17,3 +17,4 @@ detection_model2.py detects following types of stuttering:
 3 : Prolongation
 4 : Interjection
 5 : Block
+It can also analyze long audio and detect stutter segments over 3s time instead of giving only one prediction for the whole file.
