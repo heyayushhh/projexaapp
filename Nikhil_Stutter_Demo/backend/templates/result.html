@@ -2,15 +2,31 @@
 <html>
 <head>
     <title>Results</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
 
-<h1>Session Results</h1>
+<h1>Speech Analysis Dashboard</h1>
 
-<video id="videoPlayer" width="600" controls></video>
+<div class="card">
+    <h2>📊 Summary</h2>
+    <div id="summaryBox"></div>
+</div>
 
-<h2>Detected Stutters</h2>
-<ul id="resultsList"></ul>
+<div class="card">
+    <h2>🧠 Insights</h2>
+    <ul id="insightsList"></ul>
+</div>
+
+<div class="card">
+    <h2>🎥 Recording</h2>
+    <video id="videoPlayer" controls></video>
+</div>
+
+<div class="card">
+    <h2>📍 Detected Stutters</h2>
+    <ul id="resultsList"></ul>
+</div>
 
 <script>
 const params = new URLSearchParams(window.location.search);
@@ -27,21 +43,44 @@ if (!session) {
 
 const video = document.getElementById("videoPlayer");
 const list = document.getElementById("resultsList");
+const summaryBox = document.getElementById("summaryBox");
+const insightsList = document.getElementById("insightsList");
 
 video.src = `/video/${session}`;
 
 fetch(`/results/${session}`)
     .then(res => res.json())
     .then(data => {
-        if (!Array.isArray(data) || data.length === 0) {
+
+        // SUMMARY
+        const summary = data.summary;
+        summaryBox.innerHTML = `
+            <p><strong>Total Events:</strong> ${summary.total_events}</p>
+            <p><strong>Most Common:</strong> ${summary.most_common}</p>
+            <p><strong>Visual Events:</strong> ${summary.visual_events}</p>
+        `;
+
+        // INSIGHTS
+        data.insights.forEach(text => {
+            const li = document.createElement("li");
+            li.innerText = text;
+            insightsList.appendChild(li);
+        });
+
+        // EVENTS
+        const events = data.events;
+
+        if (!events || events.length === 0) {
             list.innerHTML = "<li>No stutters detected</li>";
             return;
         }
 
-        data.forEach(item => {
+        events.forEach(item => {
             const li = document.createElement("li");
 
             li.innerText = `${item.type} | ${item.start}s - ${item.end}s`;
+
+            li.classList.add(item.type); // 🎨 color
 
             li.onclick = () => {
                 video.currentTime = item.start;
