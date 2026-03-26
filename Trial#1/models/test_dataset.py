@@ -1,6 +1,6 @@
 import torch
 from stutter_dataset import StutterDataset
-from model import StutterCNN
+from stutter_model import StutterCNN
 
 dataset = StutterDataset("Data_downloading/dataset/final_dataset.csv")
 
