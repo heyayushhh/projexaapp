@@ -1,0 +1,31 @@
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.env
+venv/
+ENV/
+env/
+.venv/
+build/
+dist/
+*.log
+*.err
+temp_*
+
+# Node
+node_modules/
+dist/
+dist-ssr
+*.local
+frontend/node_modules/
+frontend/dist/
+
+# OS
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo
