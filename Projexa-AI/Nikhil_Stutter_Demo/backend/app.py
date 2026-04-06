@@ -15,6 +15,7 @@ os.makedirs(RECORDINGS_DIR, exist_ok=True)
 
 
 # --- FRONTEND ROUTES ---
+@app.route("/")
 @app.route("/app")
 def index_page():
     return render_template("index.html")

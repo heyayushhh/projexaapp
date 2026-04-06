@@ -1,7 +1,6 @@
-
 fastapi
 uvicorn
-motor
+motor>=3.0.0
 pydantic-settings
 bcrypt
 pyjwt
@@ -9,3 +8,5 @@ python-multipart
 requests
 dnspython
 pydantic[email]
+pymongo>=4.0.0
+certifi
