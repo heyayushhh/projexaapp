@@ -13,14 +13,18 @@ async def connect_to_mongo():
     # Adding certifi for SSL certificates on cloud providers
     # and adding a timeout for better error handling
     try:
-        # Use a more stable connection string format for some environments
-        # and ensure we use the modern 'tls' parameter instead of 'ssl'
+        # For MongoDB Atlas on some cloud providers (like Railway),
+        # we need to be very explicit about the SSL/TLS configuration.
+        # We use tlsCAFile from certifi to ensure root certificates are found.
         db.client = AsyncIOMotorClient(
             settings.MONGODB_URL,
             tlsCAFile=certifi.where(),
-            serverSelectionTimeoutMS=5000,
+            serverSelectionTimeoutMS=10000, # Increased timeout for cloud network latency
+            connectTimeoutMS=10000,
             tls=True,
-            retryWrites=True
+            retryWrites=True,
+            # Some environments need to explicitly disable certificate revocation checks
+            # if the cloud network blocks those requests, but we keep it safe by default.
         )
         # Verify connection
         await db.client.admin.command('ping')
