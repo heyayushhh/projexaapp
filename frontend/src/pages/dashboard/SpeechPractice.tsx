@@ -72,65 +72,6 @@ const SpeechPractice: React.FC<SpeechPracticeProps> = ({ exercise, onComplete, o
     highlights: { word: string; status: 'correct' | 'wrong' | 'missing' }[];
   } | null>(null);
 
-  useEffect(() => {
-    if (!SpeechRecognition) {
-      setError("Web Speech API is not supported in this browser. Please use Chrome or Edge.");
-      return;
-    }
-
-    const reco = new SpeechRecognition();
-    reco.continuous = true;
-    reco.interimResults = false;
-    reco.lang = 'en-US';
-
-    reco.onresult = (event: SpeechRecognitionEvent) => {
-      let finalTranscript = '';
-      for (let i = event.resultIndex; i < event.results.length; ++i) {
-        if (event.results[i].isFinal) {
-          finalTranscript += event.results[i][0].transcript;
-        }
-      }
-      if (finalTranscript) {
-        const newTranscript = (transcriptRef.current + ' ' + finalTranscript).trim();
-        transcriptRef.current = newTranscript;
-        setTranscript(newTranscript);
-      }
-    };
-
-    reco.onstart = () => {
-      setIsRecording(true);
-      setError(null);
-    };
-
-    reco.onerror = (event: SpeechRecognitionErrorEvent) => {
-      if (event.error === 'not-allowed') {
-        setError("Microphone permission denied. Please enable mic access.");
-      } else if (event.error === 'no-speech') {
-        setError("No speech detected. Please try again.");
-      } else {
-        setError(`Error: ${event.error}`);
-      }
-      setIsRecording(false);
-    };
-
-    reco.onend = () => {
-      setIsRecording(false);
-      // Trigger processing immediately on end
-      setTimeout(() => {
-        handleProcessResult();
-      }, 300);
-    };
-
-    setRecognition(reco);
-    return () => {
-      reco.onresult = null;
-      reco.onerror = null;
-      reco.onend = null;
-      reco.onstart = null;
-      reco.stop();
-    };
-  }, [handleProcessResult]);
-
   // Similarity helper (Levenshtein Distance)
   const getSimilarity = useCallback((s1: string, s2: string) => {
     const len1 = s1.length;
@@ -257,6 +198,64 @@ const SpeechPractice: React.FC<SpeechPracticeProps> = ({ exercise, onComplete, o
     const stats = calculateAdvancedScore(exercise.sentence, finalSpeech);
     setResult(stats);
   }, [calculateAdvancedScore, exercise.sentence]);
+
+  useEffect(() => {
+    if (!SpeechRecognition) {
+      setError("Web Speech API is not supported in this browser. Please use Chrome or Edge.");
+      return;
+    }
+
+    const reco = new SpeechRecognition();
+    reco.continuous = true;
+    reco.interimResults = false;
+    reco.lang = 'en-US';
+
+    reco.onresult = (event: SpeechRecognitionEvent) => {
+      let finalTranscript = '';
+      for (let i = event.resultIndex; i < event.results.length; ++i) {
+        if (event.results[i].isFinal) {
+          finalTranscript += event.results[i][0].transcript;
+        }
+      }
+      if (finalTranscript) {
+        const newTranscript = (transcriptRef.current + ' ' + finalTranscript).trim();
+        transcriptRef.current = newTranscript;
+        setTranscript(newTranscript);
+      }
+    };
+
+    reco.onstart = () => {
+      setIsRecording(true);
+      setError(null);
+    };
+
+    reco.onerror = (event: SpeechRecognitionErrorEvent) => {
+      if (event.error === 'not-allowed') {
+        setError("Microphone permission denied. Please enable mic access.");
+      } else if (event.error === 'no-speech') {
+        setError("No speech detected. Please try again.");
+      } else {
+        setError(`Error: ${event.error}`);
+      }
+      setIsRecording(false);
+    };
+
+    reco.onend = () => {
+      setIsRecording(false);
+      setTimeout(() => {
+        handleProcessResult();
+      }, 300);
+    };
+
+    setRecognition(reco);
+    return () => {
+      reco.onresult = null;
+      reco.onerror = null;
+      reco.onend = null;
+      reco.onstart = null;
+      reco.stop();
+    };
+  }, [handleProcessResult]);
 
   const handleFinish = async () => {
     if (result && !isSaving) {

@@ -7,10 +7,12 @@ from datetime import datetime, timedelta, time as dt_time
 from ..utils.auth import get_current_user_id
 import uuid
 import os
+import logging
 
 from ..services.ml_service import run_stutter_analysis
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
 @router.get("/stats")
 async def get_dashboard_stats(user_id: str = Depends(get_current_user_id)):
@@ -270,8 +272,8 @@ async def process_and_store(user_id: str, file_path: str):
         
         await db.speech_analysis.insert_one(result)
         
-    except Exception as e:
-        print(f"Processing error: {e}")
+    except Exception:
+        logger.exception("Processing error")
     finally:
         if os.path.exists(file_path):
             os.remove(file_path)
