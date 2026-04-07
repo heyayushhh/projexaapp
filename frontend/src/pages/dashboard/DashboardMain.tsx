@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { dashboardApi } from '../../services/api';
+import { dashboardApi, type DashboardSession } from '../../services/api';
 import { useThemeStore } from '../../store/themeStore';
 import { 
   Activity, 
@@ -11,16 +11,26 @@ import {
   ArrowRight,
   Trophy
 } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
+interface DashboardStatsUi {
+  fluencyScore: number;
+  currentStreak: number;
+  totalSessions: number;
+}
+
 const DashboardMain: React.FC = () => {
-  const { isDark } = useThemeStore();
-  const [stats, setStats] = useState<any>(null);
-  const [sessions, setSessions] = useState<any[]>([]);
+  const { token } = useThemeStore();
+  const [stats, setStats] = useState<DashboardStatsUi | null>(null);
+  const [sessions, setSessions] = useState<DashboardSession[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (!token) return;
+    let cancelled = false;
     const fetchData = async () => {
+      setLoading(true);
       try {
         const [statsRes, sessionsRes] = await Promise.all([
           dashboardApi.getStats(),
@@ -28,20 +38,25 @@ const DashboardMain: React.FC = () => {
         ]);
         
         // Map backend response fields to frontend state
-        setStats({
-          fluencyScore: statsRes.avg_score,
-          currentStreak: statsRes.streak,
-          totalSessions: statsRes.total_sessions
-        });
-        setSessions(sessionsRes);
+        if (!cancelled) {
+          setStats({
+            fluencyScore: statsRes.avg_score,
+            currentStreak: statsRes.streak,
+            totalSessions: statsRes.total_sessions
+          });
+          setSessions(sessionsRes);
+        }
       } catch (err) {
         console.error(err);
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     };
     fetchData();
-  }, []);
+    return () => {
+      cancelled = true;
+    };
+  }, [token]);
 
   if (loading) return (
     <div className="flex items-center justify-center h-64">
@@ -50,34 +65,33 @@ const DashboardMain: React.FC = () => {
   );
 
   return (
-    <div className="space-y-10">
+    <div className="space-y-6 sm:space-y-10">
       {/* Top Stats Row */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
         <StatCard 
           icon={TrendingUp} 
           label="Fluency Score" 
           value={`${stats?.fluencyScore || 0}%`} 
           color="text-accent"
-          isDark={isDark}
         />
         <StatCard 
           icon={Flame} 
           label="Current Streak" 
           value={`${stats?.currentStreak || 0} Days`} 
           color="text-orange-400"
-          isDark={isDark}
         />
+        
         <StatCard 
           icon={Activity} 
           label="Total Sessions" 
           value={stats?.totalSessions || 0} 
           color="text-blue-400"
-          isDark={isDark}
         />
+
       </div>
 
       {/* Main Content Area */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8">
         {/* Activity Feed */}
         <div className="lg:col-span-2 space-y-6">
           <div className="flex items-center justify-between">
@@ -94,7 +108,7 @@ const DashboardMain: React.FC = () => {
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.05 }}
-                className="p-5 rounded-2xl border border-border-subtle bg-card-bg shadow-soft hover:shadow-premium group transition-all duration-300 flex items-center justify-between"
+                className="p-4 sm:p-5 rounded-2xl border border-border-subtle bg-card-bg shadow-soft hover:shadow-premium group transition-all duration-300 flex items-center justify-between gap-4"
               >
                 <div className="flex items-center gap-4">
                   <div className={`w-12 h-12 rounded-xl flex items-center justify-center transition-colors duration-300 ${
@@ -104,7 +118,7 @@ const DashboardMain: React.FC = () => {
                   }`}>
                     {session.session_type === 'training' ? <Trophy size={20} /> : <Mic2 size={20} />}
                   </div>
-                  <div>
+                  <div className="min-w-0">
                     <p className="font-bold text-text-primary">
                       {session.session_type === 'training' ? `Level ${session.level}` : 'Speech Analysis'}
                     </p>
@@ -113,7 +127,7 @@ const DashboardMain: React.FC = () => {
                     </p>
                   </div>
                 </div>
-                <div className="text-right">
+                <div className="text-right shrink-0">
                   <p className="text-lg font-black text-text-primary">{session.fluency_score}%</p>
                   <p className="text-[10px] font-bold uppercase tracking-widest text-text-secondary">Fluency</p>
                 </div>
@@ -150,26 +164,40 @@ const DashboardMain: React.FC = () => {
   );
 };
 
-const StatCard = ({ icon: Icon, label, value, color }: any) => (
-  <div className="p-6 rounded-[2rem] border border-border-subtle bg-card-bg shadow-soft hover:shadow-premium transition-all duration-500 group">
+interface StatCardProps {
+  icon: LucideIcon;
+  label: string;
+  value: string | number;
+  color: string;
+}
+
+const StatCard = ({ icon: Icon, label, value, color }: StatCardProps) => (
+  <div className="p-4 sm:p-6 rounded-[2rem] border border-border-subtle bg-card-bg shadow-soft hover:shadow-premium transition-all duration-500 group">
     <div className="flex items-center justify-between mb-4">
       <div className={`p-3 rounded-2xl bg-bg-primary group-hover:scale-110 transition-transform duration-500 ${color}`}>
         <Icon size={24} />
       </div>
     </div>
     <p className="text-sm font-bold text-text-secondary uppercase tracking-widest mb-1">{label}</p>
-    <p className="text-3xl font-black tracking-tight text-text-primary">{value}</p>
+    <p className="text-2xl sm:text-3xl font-black tracking-tight text-text-primary">{value}</p>
   </div>
 );
 
-const ActionButton = ({ to, icon: Icon, label, sub }: any) => (
-  <Link to={to} className="flex items-center gap-4 p-5 rounded-2xl border border-border-subtle bg-card-bg shadow-soft hover:shadow-premium hover:border-accent/30 transition-all duration-300 group">
+interface ActionButtonProps {
+  to: string;
+  icon: LucideIcon;
+  label: string;
+  sub: string;
+}
+
+const ActionButton = ({ to, icon: Icon, label, sub }: ActionButtonProps) => (
+  <Link to={to} className="flex items-center gap-4 p-4 sm:p-5 rounded-2xl border border-border-subtle bg-card-bg shadow-soft hover:shadow-premium hover:border-accent/30 transition-all duration-300 group">
     <div className="p-3 rounded-xl bg-accent/10 text-accent group-hover:bg-accent group-hover:text-white transition-all duration-300">
       <Icon size={20} />
     </div>
-    <div>
+    <div className="min-w-0">
       <p className="font-bold text-sm text-text-primary group-hover:text-accent transition-colors">{label}</p>
-      <p className="text-xs text-text-secondary">{sub}</p>
+      <p className="text-xs text-text-secondary break-words">{sub}</p>
     </div>
   </Link>
 );

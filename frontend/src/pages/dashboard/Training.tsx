@@ -4,27 +4,39 @@ import { useState, useEffect } from 'react';
 import { EXERCISES } from './exerciseData';
 import type { Exercise } from './exerciseData';
 import SpeechPractice from './SpeechPractice';
+import { useThemeStore } from '../../store/themeStore';
+
+interface TrainingSessionData {
+  fluencyScore: number;
+  isCorrect: boolean;
+  transcript?: string;
+}
 
 const Training = () => {
+  const { token } = useThemeStore();
   const [progress, setProgress] = useState<Record<number, { score: number; is_correct: boolean }>>({});
   const [selectedExercise, setSelectedExercise] = useState<Exercise | null>(null);
   const [activeTab, setActiveTab] = useState<Exercise['type']>('SoundRep');
 
   useEffect(() => {
+    if (!token) return;
+    let cancelled = false;
     const fetchProgress = async () => {
       try {
         const data = await dashboardApi.getTrainingProgress();
-        setProgress(data.progress || {});
+        if (!cancelled) setProgress(data.progress || {});
       } catch (err) {
         console.error("Failed to fetch progress:", err);
       }
     };
     fetchProgress();
-  }, []);
+    return () => {
+      cancelled = true;
+    };
+  }, [token]);
 
-  const handleComplete = async (exercise: Exercise, sessionData: any) => {
+  const handleComplete = async (exercise: Exercise, sessionData: TrainingSessionData) => {
     try {
-      console.log("[DEBUG] Completing exercise:", exercise.id);
       await dashboardApi.completeTraining(exercise.id, {
         ...sessionData,
         type: exercise.type,
@@ -42,7 +54,6 @@ const Training = () => {
         }
       };
       
-      console.log("[DEBUG] Updated progress map:", updatedProgress);
       setProgress(updatedProgress);
       
       // Auto-open next level if current is completed successfully
@@ -54,7 +65,6 @@ const Training = () => {
         );
         
         if (nextLevel) {
-          console.log("[DEBUG] Unlocking next level:", nextLevel.id);
           setTimeout(() => {
             setSelectedExercise(nextLevel);
           }, 800);
@@ -64,9 +74,12 @@ const Training = () => {
       } else {
         setSelectedExercise(null);
       }
-    } catch (err: any) {
-      console.error("[ERROR] Failed to save training session:", err);
-      if (err.response?.status === 401) {
+    } catch (err: unknown) {
+      const status =
+        typeof err === 'object' && err !== null
+          ? (err as { response?: { status?: number } }).response?.status
+          : undefined;
+      if (status === 401) {
         alert("Your session has expired. Please log out and log in again to save your progress.");
       } else {
         alert("Failed to save progress. Please check your internet connection.");
@@ -121,23 +134,23 @@ const Training = () => {
   };
 
   return (
-    <div className="max-w-6xl mx-auto space-y-12 pb-24">
-      <div className="text-center mb-12">
-        <h2 className="text-5xl font-black mb-4 tracking-tight text-text-primary">
+    <div className="max-w-6xl mx-auto space-y-8 sm:space-y-12 pb-16 sm:pb-24">
+      <div className="text-center mb-8 sm:mb-12 px-2">
+        <h2 className="text-3xl sm:text-4xl md:text-5xl font-black mb-3 sm:mb-4 tracking-tight text-text-primary break-words">
           Training <span className="text-accent">Roadmap</span>
         </h2>
-        <p className="text-lg font-medium text-text-secondary max-w-2xl mx-auto">
+        <p className="text-sm sm:text-base md:text-lg font-medium text-text-secondary max-w-[600px] mx-auto break-words">
           Progress through clinical exercises designed to build speech confidence and muscle memory.
         </p>
       </div>
 
       {/* Category Tabs */}
-      <div className="flex flex-wrap justify-center gap-3 mb-16 p-2 rounded-3xl bg-bg-primary/50 border border-border-subtle inline-flex mx-auto w-full max-w-fit">
+      <div className="flex flex-wrap justify-center gap-2 sm:gap-3 mb-10 sm:mb-16 p-2 rounded-3xl bg-bg-primary/50 border border-border-subtle inline-flex mx-auto w-full max-w-fit">
         {categories.map((cat) => (
           <button
             key={cat.type}
             onClick={() => setActiveTab(cat.type)}
-            className={`px-6 py-3 rounded-2xl font-bold uppercase tracking-widest text-[10px] transition-all duration-300 flex items-center gap-2 ${
+            className={`min-h-[44px] px-4 sm:px-6 py-2.5 sm:py-3 rounded-2xl font-bold uppercase tracking-widest text-[10px] transition-all duration-300 flex items-center gap-2 whitespace-nowrap ${
               activeTab === cat.type
                 ? 'bg-accent text-white shadow-lg shadow-accent/20'
                 : 'text-text-secondary hover:text-text-primary hover:bg-bg-primary'
@@ -149,10 +162,10 @@ const Training = () => {
         ))}
       </div>
 
-      <div className="space-y-24">
+      <div className="space-y-16 sm:space-y-24">
         {(['Easy', 'Medium', 'Hard'] as const).map((difficulty) => (
           <div key={difficulty} className="relative">
-            <div className="flex items-center gap-6 mb-12">
+            <div className="flex items-center gap-4 sm:gap-6 mb-8 sm:mb-12">
               <div className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-[0.2em] ${
                 difficulty === 'Easy' ? 'bg-green-500/10 text-green-500' : 
                 difficulty === 'Medium' ? 'bg-blue-500/10 text-blue-500' : 'bg-purple-500/10 text-purple-500'
@@ -180,7 +193,7 @@ const Training = () => {
                     <button
                       onClick={() => unlocked && setSelectedExercise(ex)}
                       disabled={!unlocked}
-                      className={`w-20 h-20 rounded-[2rem] flex flex-col items-center justify-center transition-all duration-500 border-2 relative group ${
+                      className={`w-16 h-16 sm:w-20 sm:h-20 rounded-2xl sm:rounded-[2rem] flex flex-col items-center justify-center transition-all duration-500 border-2 relative group ${
                         isDone 
                           ? 'bg-accent border-accent text-white shadow-premium' 
                           : unlocked 
@@ -189,7 +202,7 @@ const Training = () => {
                       }`}
                     >
                       <span className="text-[10px] font-black mb-0.5 opacity-60">LVL</span>
-                      <span className="text-2xl font-black tracking-tighter">{ex.level}</span>
+                      <span className="text-xl sm:text-2xl font-black tracking-tighter">{ex.level}</span>
                       
                       {isDone && (
                         <div className="absolute -top-2 -right-2 w-7 h-7 bg-white rounded-full flex items-center justify-center text-accent shadow-premium border-2 border-accent transform group-hover:scale-110 transition-transform">

@@ -21,32 +21,37 @@ const AuthPage = ({ onAuthSuccess }: AuthPageProps) => {
 
     const formData = new FormData(e.currentTarget as HTMLFormElement);
     const data = Object.fromEntries(formData.entries());
+    const asString = (value: FormDataEntryValue | undefined) => (typeof value === 'string' ? value : '');
 
     try {
       if (isLogin) {
         const res = await authApi.login({
-          username: data.usernameOrEmail,
-          password: data.password,
+          username: asString(data.usernameOrEmail as FormDataEntryValue | undefined),
+          password: asString(data.password as FormDataEntryValue | undefined),
         });
         setStoreLogin(res.access_token, res.user);
       } else {
         await authApi.register({
-          name: data.fullName,
-          username: data.username,
-          description: data.description,
-          email: data.email,
-          password: data.password,
+          name: asString(data.fullName as FormDataEntryValue | undefined),
+          username: asString(data.username as FormDataEntryValue | undefined),
+          description: asString(data.description as FormDataEntryValue | undefined),
+          email: asString(data.email as FormDataEntryValue | undefined),
+          password: asString(data.password as FormDataEntryValue | undefined),
         });
         // Auto-login after register
         const res = await authApi.login({
-          username: data.username,
-          password: data.password,
+          username: asString(data.username as FormDataEntryValue | undefined),
+          password: asString(data.password as FormDataEntryValue | undefined),
         });
         setStoreLogin(res.access_token, res.user);
       }
       onAuthSuccess();
-    } catch (err: any) {
-      setError(err.response?.data?.detail || 'Authentication failed');
+    } catch (err: unknown) {
+      const maybeDetail =
+        typeof err === 'object' && err !== null
+          ? (err as { response?: { data?: { detail?: unknown } } }).response?.data?.detail
+          : null;
+      setError(typeof maybeDetail === 'string' ? maybeDetail : 'Authentication failed');
     } finally {
       setIsLoading(false);
     }
@@ -59,7 +64,7 @@ const AuthPage = ({ onAuthSuccess }: AuthPageProps) => {
   }`;
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-[85vh] px-4 py-12">
+    <div className="flex flex-col items-center justify-center min-h-[85vh] px-4 sm:px-6 md:px-8 py-10 sm:py-12">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ 
@@ -74,7 +79,7 @@ const AuthPage = ({ onAuthSuccess }: AuthPageProps) => {
             ease: "easeInOut" 
           }
         }}
-        className={`backdrop-blur-2xl p-8 rounded-[2rem] border shadow-[0_25px_50px_-12px_rgba(0,0,0,0.25)] w-full max-w-lg transition-all duration-500 ${
+        className={`backdrop-blur-2xl p-6 sm:p-8 rounded-[2rem] border shadow-[0_25px_50px_-12px_rgba(0,0,0,0.25)] w-full max-w-md transition-all duration-500 ${
           isDark 
             ? 'bg-black/40 border-white/10 shadow-black/40' 
             : 'bg-white/70 border-black/5 shadow-black/10'

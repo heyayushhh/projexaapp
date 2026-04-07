@@ -1,24 +1,32 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { dashboardApi } from '../../services/api';
+import { dashboardApi, type DashboardStatsResponse } from '../../services/api';
+import { useThemeStore } from '../../store/themeStore';
 
 const Progress = () => {
-  const [stats, setStats] = useState<any>(null);
+  const { token } = useThemeStore();
+  const [stats, setStats] = useState<DashboardStatsResponse | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (!token) return;
+    let cancelled = false;
     const fetchStats = async () => {
+      setLoading(true);
       try {
         const res = await dashboardApi.getStats();
-        setStats(res);
+        if (!cancelled) setStats(res);
       } catch (err) {
         console.error(err);
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     };
     fetchStats();
-  }, []);
+    return () => {
+      cancelled = true;
+    };
+  }, [token]);
 
   if (loading) {
     return (
@@ -28,18 +36,22 @@ const Progress = () => {
     );
   }
 
-  const scores = stats?.fluency_trend?.map((s: any) => s.score) || [0, 0, 0, 0, 0, 0, 0];
+  const scores = stats?.fluency_trend?.map((s) => s.score) || [0, 0, 0, 0, 0, 0, 0];
 
   return (
-    <div className="max-w-5xl mx-auto space-y-12 pb-20">
-      <div className="text-center mb-12">
-        <h2 className="text-5xl font-black mb-4 tracking-tight text-text-primary">Fluency <span className="text-accent">Progress</span></h2>
-        <p className="text-lg font-medium text-text-secondary">Track your clinical improvement with daily fluency analytics.</p>
+    <div className="max-w-5xl mx-auto space-y-8 sm:space-y-12 pb-14 sm:pb-20">
+      <div className="text-center mb-8 sm:mb-12 px-2">
+        <h2 className="text-3xl sm:text-4xl md:text-5xl font-black mb-3 sm:mb-4 tracking-tight text-text-primary break-words">
+          Fluency <span className="text-accent">Progress</span>
+        </h2>
+        <p className="text-sm sm:text-base md:text-lg font-medium text-text-secondary max-w-[600px] mx-auto break-words">
+          Track your clinical improvement with daily fluency analytics.
+        </p>
       </div>
 
-      <div className="p-10 rounded-[3rem] border border-border-subtle bg-card-bg shadow-premium transition-all duration-500">
-        <div className="flex items-center justify-between mb-12">
-          <h3 className="text-2xl font-black tracking-tight text-text-primary">Fluency Score Trend</h3>
+      <div className="p-4 sm:p-6 md:p-10 rounded-2xl sm:rounded-[3rem] border border-border-subtle bg-card-bg shadow-premium transition-all duration-500">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8 sm:mb-12">
+          <h3 className="text-lg sm:text-2xl font-black tracking-tight text-text-primary break-words">Fluency Score Trend</h3>
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">
               <div className="w-3 h-3 rounded-full bg-accent shadow-[0_0_10px_rgba(56,178,172,0.5)]"></div>
@@ -49,8 +61,8 @@ const Progress = () => {
         </div>
         
         {/* SVG Graph */}
-        <div className="h-[350px] w-full relative pt-10 px-4">
-          <svg className="w-full h-full overflow-visible" viewBox={`0 0 ${(scores.length - 1) * 100} 300`} preserveAspectRatio="none">
+        <div className="h-[240px] sm:h-[320px] md:h-[350px] w-full relative pt-6 sm:pt-10 px-2 sm:px-4 overflow-hidden">
+          <svg className="w-full h-full" viewBox={`0 0 ${(scores.length - 1) * 100} 300`} preserveAspectRatio="none">
             {/* Grid lines */}
             {[0, 25, 50, 75, 100].map((level, i) => (
               <g key={i}>
@@ -139,8 +151,8 @@ const Progress = () => {
           </svg>
         </div>
         
-        <div className="flex justify-between mt-12 px-4 border-t border-border-subtle pt-8">
-          {stats?.fluency_trend?.map((s: any, i: number) => (
+        <div className="flex flex-wrap justify-between gap-4 mt-8 sm:mt-12 px-2 sm:px-4 border-t border-border-subtle pt-6 sm:pt-8">
+          {stats?.fluency_trend?.map((s, i: number) => (
             <div key={i} className="flex flex-col items-center gap-1">
               <span className="text-[10px] font-black text-text-secondary uppercase tracking-widest">
                 {s.day}
@@ -150,9 +162,9 @@ const Progress = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        <div className="p-8 rounded-[2.5rem] border border-border-subtle bg-card-bg shadow-premium transition-all duration-500 group">
-          <div className="flex items-center gap-3 mb-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-8">
+        <div className="p-5 sm:p-8 rounded-2xl sm:rounded-[2.5rem] border border-border-subtle bg-card-bg shadow-premium transition-all duration-500 group">
+          <div className="flex items-center gap-3 mb-5 sm:mb-6">
             <div className="p-2.5 rounded-xl bg-accent/10 text-accent">
               <span className="text-xl">🏆</span>
             </div>
@@ -172,14 +184,14 @@ const Progress = () => {
           </ul>
         </div>
 
-        <div className="p-8 rounded-[2.5rem] border border-border-subtle bg-card-bg shadow-premium transition-all duration-500 group">
-          <div className="flex items-center gap-3 mb-6">
+        <div className="p-5 sm:p-8 rounded-2xl sm:rounded-[2.5rem] border border-border-subtle bg-card-bg shadow-premium transition-all duration-500 group">
+          <div className="flex items-center gap-3 mb-5 sm:mb-6">
             <div className="p-2.5 rounded-xl bg-orange-500/10 text-orange-500">
               <span className="text-xl">🎯</span>
             </div>
             <h4 className="text-sm font-black uppercase tracking-widest text-text-secondary">Focus Area</h4>
           </div>
-          <p className="text-base mb-6 leading-relaxed text-text-secondary">
+          <p className="text-sm sm:text-base mb-5 sm:mb-6 leading-relaxed text-text-secondary break-words">
             Based on your last 3 sessions, you should focus on <strong className="text-text-primary">Light Contacts</strong> for plosive sounds (P, B, T).
           </p>
           <button className="text-accent font-black uppercase tracking-widest text-[10px] hover:text-accent-hover transition-colors flex items-center gap-2 group/btn">

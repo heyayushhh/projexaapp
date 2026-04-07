@@ -12,7 +12,14 @@ import {
 import { Link, useLocation } from 'react-router-dom';
 import { useThemeStore } from '../store/themeStore';
 
-const Sidebar: React.FC = () => {
+interface SidebarProps {
+  className?: string;
+  onNavigate?: () => void;
+  onClose?: () => void;
+  showCloseButton?: boolean;
+}
+
+const Sidebar: React.FC<SidebarProps> = ({ className, onNavigate, onClose, showCloseButton }) => {
   const { isDark, toggleTheme, user, logout } = useThemeStore();
   const location = useLocation();
 
@@ -29,13 +36,25 @@ const Sidebar: React.FC = () => {
   };
 
   return (
-    <aside className="w-72 hidden md:flex flex-col border-r border-border-subtle bg-sidebar-bg h-screen sticky top-0 transition-colors duration-300">
-      <div className="p-8">
-        <div className="flex items-center gap-3 mb-12">
+    <aside className={`w-72 flex flex-col border-r border-border-subtle bg-sidebar-bg h-screen transition-colors duration-300 ${className || ''}`}>
+      <div className="p-6 sm:p-8">
+        <div className="flex items-center justify-between gap-3 mb-10 sm:mb-12">
           <div className="w-10 h-10 rounded-xl bg-accent flex items-center justify-center shadow-lg shadow-accent/20">
             <span className="text-white font-bold text-xl">V</span>
           </div>
-          <span className="text-2xl font-bold tracking-tight text-text-primary">VocaCare</span>
+          <span className="text-xl sm:text-2xl font-bold tracking-tight text-text-primary whitespace-nowrap">VocaCare</span>
+          {showCloseButton && (
+            <button
+              type="button"
+              aria-label="Close menu"
+              className={`min-h-[44px] min-w-[44px] rounded-xl border transition-colors ${
+                isDark ? 'border-white/10 bg-black/20 text-white' : 'border-black/10 bg-white/60 text-[#111]'
+              }`}
+              onClick={onClose}
+            >
+              <span className="text-xl leading-none">✕</span>
+            </button>
+          )}
         </div>
 
         <nav className="space-y-1">
@@ -45,6 +64,10 @@ const Sidebar: React.FC = () => {
               <Link
                 key={item.id}
                 to={item.path}
+                onClick={() => {
+                  onNavigate?.();
+                  onClose?.();
+                }}
                 className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 group relative ${
                   active 
                     ? 'bg-sidebar-active text-accent' 
@@ -77,7 +100,7 @@ const Sidebar: React.FC = () => {
         </nav>
       </div>
 
-      <div className="mt-auto p-8 space-y-2">
+      <div className="mt-auto p-6 sm:p-8 space-y-2">
         <div className="px-4 py-4 rounded-2xl bg-bg-primary/30 border border-border-subtle mb-6">
           <div className="flex items-center gap-3 mb-3">
             <div className="w-10 h-10 rounded-full bg-accent/20 flex items-center justify-center text-accent font-bold">
@@ -92,7 +115,7 @@ const Sidebar: React.FC = () => {
 
         <button
           onClick={toggleTheme}
-          className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-text-secondary hover:bg-bg-primary hover:text-text-primary transition-all duration-300 group"
+          className="w-full min-h-[44px] flex items-center gap-3 px-4 py-3 rounded-xl text-text-secondary hover:bg-bg-primary hover:text-text-primary transition-all duration-300 group"
         >
           <div className="p-2 rounded-lg group-hover:bg-accent/5 transition-colors">
             {isDark ? <Sun size={18} /> : <Moon size={18} />}
@@ -101,8 +124,11 @@ const Sidebar: React.FC = () => {
         </button>
 
         <button
-          onClick={logout}
-          className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-text-secondary hover:bg-red-500/5 hover:text-red-500 transition-all duration-300 group"
+          onClick={() => {
+            logout();
+            onClose?.();
+          }}
+          className="w-full min-h-[44px] flex items-center gap-3 px-4 py-3 rounded-xl text-text-secondary hover:bg-red-500/5 hover:text-red-500 transition-all duration-300 group"
         >
           <div className="p-2 rounded-lg group-hover:bg-red-500/10 transition-colors">
             <LogOut size={18} />

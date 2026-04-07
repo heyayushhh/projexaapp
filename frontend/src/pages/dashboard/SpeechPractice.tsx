@@ -15,14 +15,52 @@ interface SpeechPracticeProps {
   onClose: () => void;
 }
 
-// Check for SpeechRecognition support
-const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+interface SpeechRecognitionAlternative {
+  transcript: string;
+}
+
+interface SpeechRecognitionResult {
+  0: SpeechRecognitionAlternative;
+  isFinal: boolean;
+}
+
+interface SpeechRecognitionEvent {
+  resultIndex: number;
+  results: ArrayLike<SpeechRecognitionResult>;
+}
+
+interface SpeechRecognitionErrorEvent {
+  error: string;
+}
+
+interface ISpeechRecognition {
+  continuous: boolean;
+  interimResults: boolean;
+  lang: string;
+  start: () => void;
+  stop: () => void;
+  onresult: ((event: SpeechRecognitionEvent) => void) | null;
+  onstart: (() => void) | null;
+  onerror: ((event: SpeechRecognitionErrorEvent) => void) | null;
+  onend: (() => void) | null;
+}
+
+type SpeechRecognitionConstructor = new () => ISpeechRecognition;
+
+declare global {
+  interface Window {
+    SpeechRecognition?: SpeechRecognitionConstructor;
+    webkitSpeechRecognition?: SpeechRecognitionConstructor;
+  }
+}
+
+const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 
 const SpeechPractice: React.FC<SpeechPracticeProps> = ({ exercise, onComplete, onClose }) => {
   const [isRecording, setIsRecording] = useState(false);
   const [transcript, setTranscript] = useState('');
   const transcriptRef = useRef(''); // 🔥 USE REF TO AVOID RACE CONDITIONS
-  const [recognition, setRecognition] = useState<any>(null);
+  const [recognition, setRecognition] = useState<ISpeechRecognition | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false); // 🔥 LOADING STATE FOR API
   const [result, setResult] = useState<{
@@ -45,7 +83,7 @@ const SpeechPractice: React.FC<SpeechPracticeProps> = ({ exercise, onComplete, o
     reco.interimResults = false;
     reco.lang = 'en-US';
 
-    reco.onresult = (event: any) => {
+    reco.onresult = (event: SpeechRecognitionEvent) => {
       let finalTranscript = '';
       for (let i = event.resultIndex; i < event.results.length; ++i) {
         if (event.results[i].isFinal) {
@@ -64,8 +102,7 @@ const SpeechPractice: React.FC<SpeechPracticeProps> = ({ exercise, onComplete, o
       setError(null);
     };
 
-    reco.onerror = (event: any) => {
-      console.error("Speech recognition error", event.error);
+    reco.onerror = (event: SpeechRecognitionErrorEvent) => {
       if (event.error === 'not-allowed') {
         setError("Microphone permission denied. Please enable mic access.");
       } else if (event.error === 'no-speech') {
@@ -85,10 +122,17 @@ const SpeechPractice: React.FC<SpeechPracticeProps> = ({ exercise, onComplete, o
     };
 
     setRecognition(reco);
-  }, []);
+    return () => {
+      reco.onresult = null;
+      reco.onerror = null;
+      reco.onend = null;
+      reco.onstart = null;
+      reco.stop();
+    };
+  }, [handleProcessResult]);
 
   // Similarity helper (Levenshtein Distance)
-  const getSimilarity = (s1: string, s2: string) => {
+  const getSimilarity = useCallback((s1: string, s2: string) => {
     const len1 = s1.length;
     const len2 = s2.length;
     if (len1 === 0 || len2 === 0) return 0;
@@ -104,9 +148,9 @@ const SpeechPractice: React.FC<SpeechPracticeProps> = ({ exercise, onComplete, o
       }
     }
     return 1 - matrix[len1][len2] / Math.max(len1, len2);
-  };
+  }, []);
 
-  const calculateAdvancedScore = (expected: string, spoken: string) => {
+  const calculateAdvancedScore = useCallback((expected: string, spoken: string) => {
     const clean = (str: string) => 
       str.toLowerCase().replace(/[^\w\s]/g, "").split(/\s+/).filter(w => w.length > 0);
 
@@ -116,7 +160,7 @@ const SpeechPractice: React.FC<SpeechPracticeProps> = ({ exercise, onComplete, o
     let i = 0; // expected pointer
     let j = 0; // spoken pointer
     let matches = 0;
-    let result: { word: string; status: 'correct' | 'wrong' | 'missing' }[] = [];
+    const result: { word: string; status: 'correct' | 'wrong' | 'missing' }[] = [];
 
     // If spoken is empty, everything is missing
     if (spk.length === 0) {
@@ -182,7 +226,7 @@ const SpeechPractice: React.FC<SpeechPracticeProps> = ({ exercise, onComplete, o
       grade,
       highlights: result
     };
-  };
+  }, [getSimilarity]);
 
   const startRecording = () => {
     if (recognition) {
@@ -212,7 +256,7 @@ const SpeechPractice: React.FC<SpeechPracticeProps> = ({ exercise, onComplete, o
     
     const stats = calculateAdvancedScore(exercise.sentence, finalSpeech);
     setResult(stats);
-  }, [exercise.sentence]);
+  }, [calculateAdvancedScore, exercise.sentence]);
 
   const handleFinish = async () => {
     if (result && !isSaving) {
@@ -241,14 +285,14 @@ const SpeechPractice: React.FC<SpeechPracticeProps> = ({ exercise, onComplete, o
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-bg-primary/40 backdrop-blur-xl"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-bg-primary/40 backdrop-blur-xl"
     >
       <motion.div 
         initial={{ scale: 0.9, y: 20 }}
         animate={{ scale: 1, y: 0 }}
-        className="w-full max-w-2xl p-10 rounded-[3rem] shadow-premium border border-border-subtle bg-card-bg transition-colors duration-300"
+        className="w-full max-w-2xl max-h-[90vh] overflow-y-auto p-5 sm:p-8 md:p-10 rounded-2xl sm:rounded-[3rem] shadow-premium border border-border-subtle bg-card-bg transition-colors duration-300"
       >
-        <div className="flex justify-between items-center mb-10">
+        <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 mb-8 sm:mb-10">
           <div>
             <div className={`inline-flex px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${
               exercise.difficulty === 'Easy' ? 'bg-green-500/10 text-green-500' :
@@ -257,24 +301,24 @@ const SpeechPractice: React.FC<SpeechPracticeProps> = ({ exercise, onComplete, o
             }`}>
               {exercise.type} • {exercise.difficulty}
             </div>
-            <h2 className="text-3xl font-black mt-3 text-text-primary tracking-tight">
+            <h2 className="text-2xl sm:text-3xl font-black mt-3 text-text-primary tracking-tight break-words">
               Speech Practice
             </h2>
           </div>
           <button 
             onClick={onClose}
-            className="p-3 rounded-2xl hover:bg-bg-primary text-text-secondary hover:text-text-primary transition-all duration-300"
+            className="min-h-[44px] min-w-[44px] p-3 rounded-2xl hover:bg-bg-primary text-text-secondary hover:text-text-primary transition-all duration-300 self-start sm:self-auto"
           >
             <span className="text-xl">✕</span>
           </button>
         </div>
 
-        <div className="p-10 rounded-[2.5rem] mb-10 border-2 border-dashed border-accent/20 bg-accent/5 relative overflow-hidden group">
+        <div className="p-5 sm:p-8 md:p-10 rounded-2xl sm:rounded-[2.5rem] mb-8 sm:mb-10 border-2 border-dashed border-accent/20 bg-accent/5 relative overflow-hidden group">
           <div className="absolute top-0 left-0 w-1 h-full bg-accent opacity-20"></div>
           <p className="text-[10px] uppercase tracking-[0.2em] font-black mb-4 text-accent/60">
             Read aloud clearly
           </p>
-          <p className="text-4xl font-black leading-tight text-text-primary tracking-tight">
+          <p className="text-xl sm:text-3xl md:text-4xl font-black leading-tight text-text-primary tracking-tight break-words">
             "{exercise.sentence}"
           </p>
         </div>
@@ -286,7 +330,7 @@ const SpeechPractice: React.FC<SpeechPracticeProps> = ({ exercise, onComplete, o
         )}
 
         {!result ? (
-          <div className="flex flex-col items-center gap-10">
+          <div className="flex flex-col items-center gap-8 sm:gap-10">
             <AnimatePresence mode="wait">
               {isRecording && (
                 <motion.div 
@@ -311,7 +355,7 @@ const SpeechPractice: React.FC<SpeechPracticeProps> = ({ exercise, onComplete, o
                   <div className="text-center space-y-4 w-full">
                     <p className="text-accent font-black uppercase tracking-[0.3em] text-sm animate-pulse">Recording...</p>
                     <div className="p-6 rounded-2xl bg-bg-primary/50 border border-border-subtle min-h-[80px] flex items-center justify-center">
-                      <p className="text-xl font-bold text-text-primary italic opacity-80">
+                      <p className="text-base sm:text-xl font-bold text-text-primary italic opacity-80 break-words">
                         {transcript || "Speak now..."}
                       </p>
                     </div>
@@ -324,20 +368,20 @@ const SpeechPractice: React.FC<SpeechPracticeProps> = ({ exercise, onComplete, o
               {!isRecording ? (
                 <button
                   onClick={startRecording}
-                  className="w-32 h-32 rounded-[3rem] bg-accent flex items-center justify-center shadow-[0_20px_50px_rgba(56,178,172,0.4)] hover:scale-110 hover:shadow-[0_25px_60px_rgba(56,178,172,0.5)] active:scale-95 transition-all duration-500 group"
+                  className="w-24 h-24 sm:w-32 sm:h-32 rounded-[2.25rem] sm:rounded-[3rem] bg-accent flex items-center justify-center shadow-[0_20px_50px_rgba(56,178,172,0.35)] sm:shadow-[0_20px_50px_rgba(56,178,172,0.4)] hover:scale-110 active:scale-95 transition-all duration-500 group"
                 >
-                  <div className="w-12 h-12 rounded-2xl bg-white shadow-inner group-hover:rotate-90 transition-transform duration-500" />
-                  <div className="absolute -bottom-10 left-1/2 -translate-x-1/2 whitespace-nowrap text-[10px] font-black uppercase tracking-widest text-text-secondary group-hover:text-accent transition-colors">
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-white shadow-inner group-hover:rotate-90 transition-transform duration-500" />
+                  <div className="absolute -bottom-9 sm:-bottom-10 left-1/2 -translate-x-1/2 whitespace-nowrap text-[10px] font-black uppercase tracking-widest text-text-secondary group-hover:text-accent transition-colors">
                     Click to Start
                   </div>
                 </button>
               ) : (
                 <button
                   onClick={stopRecording}
-                  className="w-32 h-32 rounded-[3rem] bg-text-primary flex items-center justify-center shadow-premium hover:scale-110 active:scale-95 transition-all duration-500 group"
+                  className="w-24 h-24 sm:w-32 sm:h-32 rounded-[2.25rem] sm:rounded-[3rem] bg-text-primary flex items-center justify-center shadow-premium hover:scale-110 active:scale-95 transition-all duration-500 group"
                 >
                   <div className="w-10 h-10 bg-white rounded-xl group-hover:scale-75 transition-transform duration-500" />
-                  <div className="absolute -bottom-10 left-1/2 -translate-x-1/2 whitespace-nowrap text-[10px] font-black uppercase tracking-widest text-accent animate-pulse">
+                  <div className="absolute -bottom-9 sm:-bottom-10 left-1/2 -translate-x-1/2 whitespace-nowrap text-[10px] font-black uppercase tracking-widest text-accent animate-pulse">
                     Stop Now
                   </div>
                 </button>
@@ -350,8 +394,8 @@ const SpeechPractice: React.FC<SpeechPracticeProps> = ({ exercise, onComplete, o
             animate={{ opacity: 1, y: 0 }}
             className="space-y-10"
           >
-            <div className="grid grid-cols-2 gap-6">
-              <div className="p-8 rounded-[2.5rem] border border-border-subtle bg-bg-primary/30 group hover:bg-bg-primary transition-colors duration-500">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+              <div className="p-5 sm:p-8 rounded-2xl sm:rounded-[2.5rem] border border-border-subtle bg-bg-primary/30 group hover:bg-bg-primary transition-colors duration-500">
                 <p className="text-[10px] font-black uppercase tracking-widest text-text-secondary mb-3">Accuracy</p>
                 <div className="flex items-baseline gap-1">
                   <p className={`text-5xl font-black tracking-tighter ${

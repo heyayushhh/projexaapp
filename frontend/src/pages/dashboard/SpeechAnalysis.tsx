@@ -3,12 +3,25 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { dashboardApi } from '../../services/api';
 import { useThemeStore } from '../../store/themeStore';
 
+interface DetectedEvent {
+  timestamp: number;
+  type: string;
+}
+
+interface AnalysisResult {
+  transcript: string;
+  fluency_score: number;
+  total_words?: number;
+  stutterEvents?: DetectedEvent[];
+  headMovements?: DetectedEvent[];
+}
+
 const SpeechAnalysis = () => {
   const { isDark } = useThemeStore();
   const [isRecording, setIsRecording] = useState(false);
   const [mediaBlob, setMediaBlob] = useState<Blob | null>(null);
   const [status, setStatus] = useState<'idle' | 'analyzing' | 'done'>('idle');
-  const [result, setResult] = useState<any>(null);
+  const [result, setResult] = useState<AnalysisResult | null>(null);
   const [timer, setTimer] = useState(0);
   const [stream, setStream] = useState<MediaStream | null>(null);
   
@@ -91,7 +104,7 @@ const SpeechAnalysis = () => {
       setTimeout(async () => {
         const sessions = await dashboardApi.getSessions();
         if (sessions.length > 0) {
-          setResult(sessions[0]);
+          setResult(sessions[0] as unknown as AnalysisResult);
           setStatus('done');
         } else {
           setStatus('idle');
@@ -111,14 +124,14 @@ const SpeechAnalysis = () => {
 
   return (
     <div className="max-w-5xl mx-auto space-y-8">
-      <div className={`p-8 rounded-[2.5rem] border backdrop-blur-2xl shadow-2xl transition-all duration-500 ${
+      <div className={`p-4 sm:p-6 md:p-8 rounded-2xl sm:rounded-[2.5rem] border backdrop-blur-2xl shadow-2xl transition-all duration-500 ${
         isDark ? 'bg-black/40 border-white/10' : 'bg-white/70 border-black/5'
       }`}>
-        <h2 className={`text-3xl font-black mb-8 text-center ${isDark ? 'text-white' : 'text-[#111]'}`}>
+        <h2 className={`text-2xl sm:text-3xl font-black mb-6 sm:mb-8 text-center break-words ${isDark ? 'text-white' : 'text-[#111]'}`}>
           AI Speech & Movement Analysis
         </h2>
         
-        <div className="flex flex-col lg:flex-row gap-10 items-center lg:items-start">
+        <div className="flex flex-col lg:flex-row gap-6 sm:gap-10 items-center lg:items-start">
           {/* Video Preview / Recording Area */}
           <div className="flex-1 w-full relative aspect-video bg-black rounded-3xl overflow-hidden shadow-2xl border-4 border-white/5">
             {isRecording ? (
@@ -142,7 +155,7 @@ const SpeechAnalysis = () => {
             )}
             
             {isRecording && (
-              <div className="absolute top-6 left-6 flex items-center gap-3 bg-black/60 backdrop-blur-md px-4 py-2 rounded-full border border-red-500/30">
+              <div className="absolute top-4 left-4 sm:top-6 sm:left-6 flex items-center gap-3 bg-black/60 backdrop-blur-md px-3 sm:px-4 py-2 rounded-full border border-red-500/30">
                 <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse" />
                 <span className="text-white font-mono font-bold">{formatTime(timer)}</span>
               </div>
@@ -150,12 +163,12 @@ const SpeechAnalysis = () => {
           </div>
 
           {/* Controls */}
-          <div className="flex flex-col items-center justify-center gap-6 lg:w-64">
+          <div className="flex flex-col items-center justify-center gap-5 sm:gap-6 lg:w-64 w-full">
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={isRecording ? stopRecording : startRecording}
-              className={`w-24 h-24 rounded-full flex items-center justify-center text-4xl shadow-2xl transition-all ${
+              className={`w-20 h-20 sm:w-24 sm:h-24 rounded-full flex items-center justify-center text-3xl sm:text-4xl shadow-2xl transition-all ${
                 isRecording ? 'bg-red-600' : 'bg-[#FF2E2E] hover:bg-[#E02929]'
               } text-white border-none cursor-pointer`}
             >
@@ -176,7 +189,7 @@ const SpeechAnalysis = () => {
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 onClick={handleAnalyze}
-                className="w-full bg-white text-black font-black py-4 rounded-2xl hover:bg-gray-100 transition-all shadow-xl border-none cursor-pointer text-lg"
+                className="w-full min-h-[44px] bg-white text-black font-black py-3.5 sm:py-4 rounded-2xl hover:bg-gray-100 transition-all shadow-xl border-none cursor-pointer text-base sm:text-lg"
               >
                 Analyze Now
               </motion.button>
@@ -192,10 +205,10 @@ const SpeechAnalysis = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0 }}
-            className="flex flex-col items-center justify-center p-12 bg-black/20 rounded-[2.5rem] border border-white/5 backdrop-blur-xl"
+            className="flex flex-col items-center justify-center p-6 sm:p-12 bg-black/20 rounded-2xl sm:rounded-[2.5rem] border border-white/5 backdrop-blur-xl text-center"
           >
             <div className="loading loading-spinner loading-lg text-red-500 mb-6 scale-150"></div>
-            <p className="text-2xl font-black text-white animate-pulse tracking-tight">AI is analyzing speech & head movements...</p>
+            <p className="text-lg sm:text-2xl font-black text-white animate-pulse tracking-tight break-words">AI is analyzing speech & head movements...</p>
             <p className="text-gray-400 mt-2 font-medium">This usually takes 10-15 seconds</p>
           </motion.div>
         )}
@@ -222,7 +235,9 @@ const SpeechAnalysis = () => {
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   <div className="p-5 rounded-2xl bg-black/20 border border-white/5">
                     <p className="text-[10px] text-gray-500 font-black uppercase tracking-widest mb-1">Words</p>
-                    <p className="text-2xl font-black text-blue-500">{result.total_words}</p>
+                    <p className="text-2xl font-black text-blue-500">
+                      {result.total_words ?? (result.transcript ? result.transcript.trim().split(/\s+/).filter(Boolean).length : 0)}
+                    </p>
                   </div>
                   <div className="p-5 rounded-2xl bg-black/20 border border-white/5">
                     <p className="text-[10px] text-gray-500 font-black uppercase tracking-widest mb-1">Stutters</p>
@@ -242,13 +257,13 @@ const SpeechAnalysis = () => {
                 <div>
                   <h4 className="text-[#FF2E2E] font-black uppercase tracking-widest text-xs mb-4">Detected Events</h4>
                   <div className="flex flex-wrap gap-3">
-                    {result.stutterEvents?.map((event: any, i: number) => (
+                    {result.stutterEvents?.map((event: DetectedEvent, i: number) => (
                       <div key={`s-${i}`} className="bg-red-500/10 border border-red-500/20 px-4 py-2 rounded-xl flex items-center gap-2">
                         <span className="text-red-500 font-black text-xs">{event.timestamp}s</span>
                         <span className="text-white font-bold text-sm capitalize">{event.type}</span>
                       </div>
                     ))}
-                    {result.headMovements?.map((event: any, i: number) => (
+                    {result.headMovements?.map((event: DetectedEvent, i: number) => (
                       <div key={`h-${i}`} className="bg-purple-500/10 border border-purple-500/20 px-4 py-2 rounded-xl flex items-center gap-2">
                         <span className="text-purple-500 font-black text-xs">{event.timestamp}s</span>
                         <span className="text-white font-bold text-sm">Head Mov.</span>
