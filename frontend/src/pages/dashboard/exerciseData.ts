@@ -1,4 +1,4 @@
-import data from "./exercise_db.json";
+import data from "../../data/exercise_db.json";
 
 export default function Exercises() {
   return (
