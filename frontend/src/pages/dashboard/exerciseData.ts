@@ -16,72 +16,192 @@ const generateExercises = (): Exercise[] => {
   const sentences: Record<Exercise['type'], Record<Exercise['difficulty'], string[]>> = {
     SoundRep: {
       Easy: [
-        "Pat the pet.", "Big blue box.", "Ten tiny toys.", "Red rubber ball.", "Six silly songs.",
-        "Pink paper pig.", "Good green grass.", "Hot hard hat.", "Cold clear cup.", "Fast flat feet."
+        "The bill is on the table.",
+        "Please pass the paper to me.",
+        "The train ticket is in my bag.",
+        "Keep the coffee cup close.",
+        "The phone is on silent mode.",
+        "My notes are ready for review.",
+        "We can meet at ten today.",
+        "Take a calm breath and start.",
+        "I will speak with a steady pace.",
+        "That is a clear plan for now."
       ],
       Medium: [
-        "Peter Piper picked.", "Betty Botter bought.", "She sells seashells.", "Proper copper pot.", "Greek grapes grow.",
-        "Toy boat, toy boat.", "Truly rural road.", "Rubber baby buggy.", "Six slippery snails.", "Clean clams crash."
+        "Please bring the report before the meeting begins.",
+        "I can explain the plan with clear, calm speech.",
+        "Take a steady breath, then start the next sentence.",
+        "Keep your lips light and your voice gentle.",
+        "The project deadline is close, so we will stay focused.",
+        "I will talk at a steady pace and pause when needed.",
+        "My priority is clear communication, not speed.",
+        "The schedule is flexible, but we should confirm today.",
+        "I can present the key points without rushing.",
+        "We will review the details and finalize the decision."
       ],
       Hard: [
-        "Purple paper people pick.", "Seven selfish shellfish sleep.", "Unique New York roads.", "Mixed biscuits in a box.", "A loyal warrior learns.",
-        "Red lory, yellow lory.", "Specific Pacific ocean.", "Thieving thugs think.", "Black background, brown background.", "Friendly frankly flying."
+        "Before we begin, I will briefly summarize the key points for today.",
+        "I can speak clearly in discussion by pausing and keeping my airflow steady.",
+        "When I feel pressure, I slow down and use gentle starts on important words.",
+        "I will explain my decision calmly, even if I need a short pause to plan.",
+        "Please provide the final details so I can confirm the timeline and next steps.",
+        "I can introduce myself confidently and keep a steady pace through the whole message.",
+        "If I get stuck, I will stop, breathe out softly, and restart with a calm voice.",
+        "I will share feedback respectfully and focus on solutions, not speed.",
+        "During a presentation, I keep my words connected and my breathing relaxed.",
+        "I can handle spontaneous questions by pausing briefly and responding clearly."
       ]
     },
     WordRep: {
       Easy: [
-        "The cat sat.", "Go to bed.", "I like cake.", "Sun is hot.", "Dog can run.",
-        "Big red car.", "Play with ball.", "See the moon.", "Look at me.", "Time to eat."
+        "I am ready to speak now.",
+        "This is a simple clear idea.",
+        "I can answer in one sentence.",
+        "Please give me a moment.",
+        "I will keep my speech steady.",
+        "I can share my plan today.",
+        "That sounds good to me.",
+        "I will start with a calm breath.",
+        "I can speak with confidence.",
+        "I will pause and continue."
       ],
       Medium: [
-        "I want to go.", "She has a book.", "They play outside.", "We like to swim.", "He runs very fast.",
-        "The water is cold.", "My friend is nice.", "Can you help me?", "Where is the key?", "It is raining now."
+        "I want to explain this idea clearly and calmly.",
+        "Please give me a minute to organize my thoughts.",
+        "I can share two key points and then summarize.",
+        "We can discuss the details after the meeting.",
+        "I will speak slowly so my words stay clear.",
+        "Can you repeat the question one more time?",
+        "I can answer now, or I can respond in writing.",
+        "I will keep a steady rhythm from word to word.",
+        "We should confirm the time and location today.",
+        "I can describe the steps in a clear order."
       ],
       Hard: [
-        "I wonder why he went.", "The weather is very nice.", "Sometimes I think about life.", "Education is very important.", "Communication helps everyone.",
-        "Understanding takes some time.", "Professional development matters.", "Technological advancement continues.", "Environmental protection is key.", "Psychological factors are complex."
+        "In this discussion, I will stay calm and speak with a steady pace.",
+        "I can explain my background, my strengths, and what I am improving.",
+        "I will answer in two parts: context first, then the result.",
+        "If I need time to think, I will pause without using filler words.",
+        "I can present my perspective respectfully and invite your feedback.",
+        "I will communicate clearly, even when the topic feels stressful.",
+        "I can share a short example to support my point.",
+        "Before I respond, I will take a breath and start gently.",
+        "I will slow down, keep airflow steady, and continue smoothly.",
+        "I can speak naturally in real conversations with short, planned pauses."
       ]
     },
     Interjection: {
       Easy: [
-        "Hello there.", "How are you?", "Yes I am.", "No not yet.", "Wait for me.",
-        "Please sit down.", "Thanks a lot.", "Excuse me now.", "Good morning all.", "See you soon."
+        "I will pause before I answer.",
+        "Give me a moment to think.",
+        "I can respond in a clear way.",
+        "I will take a breath and begin.",
+        "I can explain that in a sentence.",
+        "I will speak slowly and clearly.",
+        "I can start again with a calm voice.",
+        "I will continue after a short pause.",
+        "I can ask a question now.",
+        "I can share my idea clearly."
       ],
       Medium: [
-        "Well, I think so.", "Actually, it is true.", "Basically, we are done.", "Honestly, I don't know.", "Literally, it happened.",
-        "Seriously, stop that.", "Basically, let's go.", "Frankly, I am tired.", "Totally, I agree.", "Maybe, we can try."
+        "Well, I can explain my approach clearly.",
+        "Actually, I need a moment to think.",
+        "Honestly, I want to respond in a calm way.",
+        "Basically, the main point is simple.",
+        "So, I will start with the first detail.",
+        "Right now, I prefer a slower pace.",
+        "In short, I agree with the plan.",
+        "To be clear, I will pause and continue.",
+        "For now, I will focus on steady speech.",
+        "I mean, I can restate that clearly."
       ],
       Hard: [
-        "As a matter of fact.", "In my humble opinion.", "To be perfectly honest.", "If I am not mistaken.", "With all due respect.",
-        "Needless to say that.", "From my perspective.", "Generally speaking now.", "In other words today.", "On the other hand."
+        "From my perspective, a brief pause helps me respond clearly.",
+        "With all due respect, I see this point a little differently.",
+        "To be honest, I need a moment to organize my thoughts.",
+        "In other words, I will restate the message with clarity.",
+        "On the other hand, we can consider a simpler option.",
+        "Generally speaking, I prefer to speak at a steady pace.",
+        "To be clear, I will answer in two short parts.",
+        "If I am not mistaken, the deadline is next week.",
+        "As a result, we should confirm the plan today.",
+        "For example, I can give one clear reason."
       ]
     },
     Prolongation: {
       Easy: [
-        "Smile at sun.", "Slow small steps.", "Star stays still.", "Stone stands strong.", "Snake slides slow.",
-        "Snow smells sweet.", "Sky shows stars.", "Sea sounds soft.", "Sleep soundly now.", "Stay safe soon."
+        "So, I can start slowly.",
+        "Soft speech starts with steady airflow.",
+        "Slow, smooth speech feels more natural.",
+        "I can focus on steady airflow.",
+        "My voice can begin gently.",
+        "Now I can continue smoothly.",
+        "I can speak with a softer start.",
+        "I will slow down and stay relaxed.",
+        "Give me a moment to begin.",
+        "One phrase at a time is enough."
       ],
       Medium: [
-        "Slowly slide down.", "Slightly small snacks.", "Slippery slope slide.", "Starting small steps.", "Simple silver spoon.",
-        "Sailing silent seas.", "Singing sweet songs.", "Searching small spaces.", "Sending short signals.", "Sitting still soon."
+        "So, I will explain the next step clearly.",
+        "Start with gentle airflow, then add your voice.",
+        "I can answer after I think for a moment.",
+        "Focus on a smooth start, not a fast start.",
+        "Steady airflow helps me keep speaking forward.",
+        "My voice begins softly, then stays consistent.",
+        "Slow down slightly before important words.",
+        "I will respond with one clear example.",
+        "Sometimes I pause to keep my speech smooth.",
+        "Follow the rhythm and keep it relaxed."
       ],
       Hard: [
-        "Systematic speech sessions.", "Significantly support stability.", "Stable sounding syllables.", "Starting strong sentences.", "Simple sounds support speech.",
-        "Speaking slowly supports success.", "Successful speech starts small.", "Stability supports sounding strong.", "Significantly simple sounds.", "Stable speech starts slowly."
+        "So, before we begin, I will summarize the key points.",
+        "Steady airflow supports a calm and confident speaking style.",
+        "I can take a brief pause and still sound professional.",
+        "A gentle start helps reduce tension in difficult moments.",
+        "Sometimes I slow down to keep my speech smooth in conversation.",
+        "My voice stays steady when I breathe out softly and start gently.",
+        "So, I will answer clearly, even under pressure.",
+        "I will explain my reasoning step by step.",
+        "Focus on flow: pause, breathe, and continue without forcing.",
+        "Steady pacing helps me speak naturally in real situations."
       ]
     },
     NoStutteredWords: {
       Easy: [
-        "I love books.", "The sky is blue.", "Birds can fly.", "Dogs like bones.", "Fish can swim.",
-        "Apples are red.", "Grass is green.", "Water is clear.", "Fire is hot.", "Ice is cold."
+        "I can speak in a calm way.",
+        "My message is clear and simple.",
+        "I will pause and then continue.",
+        "I can start with a gentle voice.",
+        "I will keep a steady pace.",
+        "I can share my idea today.",
+        "I can take my time to speak.",
+        "I will speak with steady airflow.",
+        "I can stay relaxed while talking.",
+        "I can finish this sentence smoothly."
       ],
       Medium: [
-        "Artificial intelligence works.", "Model processed data.", "High accuracy achieved.", "Learning takes practice.", "Technology is helpful.",
-        "Future is bright.", "Innovation drives growth.", "Science is amazing.", "Knowledge is power.", "Reading expands mind."
+        "I can introduce myself with calm, clear speech.",
+        "I will explain the plan in a simple order.",
+        "I can speak clearly during a short discussion.",
+        "I will pause briefly between ideas and continue.",
+        "I can answer questions with a steady pace.",
+        "I can share feedback in a respectful tone.",
+        "I will keep my words connected and smooth.",
+        "I can speak confidently in small group settings.",
+        "I will use short pauses to stay organized.",
+        "I can communicate my needs clearly and calmly."
       ],
       Hard: [
-        "Continuous clinical improvement.", "Communication requires practice.", "Dedicated effort counts.", "Consistent daily sessions.", "Professional growth happens.",
-        "Advanced analysis methods.", "Systematic approach works.", "Clinical grade results.", "Premium quality system.", "Advanced speech tools."
+        "In a real conversation, I can stay calm and speak with steady rhythm.",
+        "I can present my work clearly by using short, planned pauses.",
+        "I can respond thoughtfully, even when the topic feels stressful.",
+        "I will speak naturally and keep moving forward, even if I stutter.",
+        "I can explain my decision with clarity and a confident tone.",
+        "I can handle spontaneous questions by pausing briefly and responding clearly.",
+        "I can share my perspective respectfully and invite feedback.",
+        "I will slow down, keep airflow steady, and maintain control.",
+        "I can communicate professionally in meetings and interviews.",
+        "I can speak with confidence and clear intent in real situations."
       ]
     }
   };
