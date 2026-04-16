@@ -1,4 +1,4 @@
-from motor.motor_asyncio import AsyncIOMotorClient
+from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase
 from .config import settings
 import certifi
 import logging
@@ -6,8 +6,8 @@ import logging
 logger = logging.getLogger(__name__)
 
 class Database:
-    client: AsyncIOMotorClient = None
-    db = None
+    client: AsyncIOMotorClient | None = None
+    db: AsyncIOMotorDatabase | None = None
 
 db = Database()
 
@@ -33,5 +33,7 @@ async def close_mongo_connection():
         db.client.close()
         logger.info("MongoDB connection closed")
 
-def get_db():
+def get_db() -> AsyncIOMotorDatabase:
+    if db.db is None:
+        raise RuntimeError("Database is not initialized. Call connect_to_mongo() first.")
     return db.db

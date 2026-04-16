@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, BackgroundTasks
-from typing import List
+from typing import List, Optional
 from ..utils.models import SpeechAnalysisInDB, TrainingSessionInDB, DashboardStatsResponse, TrendDay
 from ..utils.db import get_db
 from bson import ObjectId
@@ -24,7 +24,7 @@ async def get_dashboard_stats(user_id: str = Depends(get_current_user_id)):
         {"$match": {"user_id": user_id, "is_correct": True}},
         {"$group": {"_id": "$exercise_id"}}
     ]
-    unique_levels = await db.training_sessions.aggregate(pipeline_unique).to_list(None)
+    unique_levels = await db["training_sessions"].aggregate(pipeline_unique).to_list(None)
     total_sessions = len(unique_levels)
     
     # 2. Average Fluency Score (from all sessions, speech + training)
@@ -33,10 +33,10 @@ async def get_dashboard_stats(user_id: str = Depends(get_current_user_id)):
         {"$match": {"user_id": user_id}},
         {"$group": {"_id": None, "avg_score": {"$avg": "$fluency_score"}}}
     ]
-    score_data = await db.training_sessions.aggregate(pipeline_score).to_list(None)
+    score_data = await db["training_sessions"].aggregate(pipeline_score).to_list(None)
     
     # Also get speech analysis average
-    speech_score_data = await db.speech_analysis.aggregate(pipeline_score).to_list(None)
+    speech_score_data = await db["speech_analysis"].aggregate(pipeline_score).to_list(None)
     
     scores = []
     if score_data: scores.append(score_data[0]["avg_score"])
@@ -74,8 +74,8 @@ async def get_fluency_trend(user_id: str) -> List[dict]:
             {"$group": {"_id": None, "avg": {"$avg": "$fluency_score"}}}
         ]
         
-        training_res = await db.training_sessions.aggregate(pipeline).to_list(None)
-        speech_res = await db.speech_analysis.aggregate(pipeline).to_list(None)
+        training_res = await db["training_sessions"].aggregate(pipeline).to_list(None)
+        speech_res = await db["speech_analysis"].aggregate(pipeline).to_list(None)
         
         scores = []
         if training_res: scores.append(training_res[0]["avg"])
@@ -109,8 +109,8 @@ async def calculate_streak(user_id: str) -> int:
         {"$sort": {"_id": -1}}
     ]
     
-    training_dates = await db.training_sessions.aggregate(pipeline).to_list(None)
-    speech_dates = await db.speech_analysis.aggregate(pipeline).to_list(None)
+    training_dates = await db["training_sessions"].aggregate(pipeline).to_list(None)
+    speech_dates = await db["speech_analysis"].aggregate(pipeline).to_list(None)
     
     all_dates = sorted(list(set([d["_id"] for d in training_dates] + [d["_id"] for d in speech_dates])), reverse=True)
     
@@ -143,7 +143,7 @@ async def get_recent_sessions(user_id: str = Depends(get_current_user_id)):
     db = get_db()
     
     # 1. Fetch Speech Analysis sessions
-    speech_sessions = await db.speech_analysis.find({"user_id": user_id}).sort("created_at", -1).to_list(10)
+    speech_sessions = await db["speech_analysis"].find({"user_id": user_id}).sort("created_at", -1).to_list(10)
     for s in speech_sessions:
         s["_id"] = str(s["_id"])
         s["session_type"] = "speech_analysis"
@@ -151,7 +151,7 @@ async def get_recent_sessions(user_id: str = Depends(get_current_user_id)):
             s["created_at"] = datetime.utcnow()
         
     # 2. Fetch Training sessions
-    training_sessions = await db.training_sessions.find({"user_id": user_id}).sort("created_at", -1).to_list(10)
+    training_sessions = await db["training_sessions"].find({"user_id": user_id}).sort("created_at", -1).to_list(10)
     for s in training_sessions:
         s["_id"] = str(s["_id"])
         s["session_type"] = "training"
@@ -184,7 +184,7 @@ async def analyze_speech(background_tasks: BackgroundTasks, file: UploadFile = F
 async def complete_training(
     exercise_id: int, 
     user_id: str = Depends(get_current_user_id),
-    session_data: dict = None
+    session_data: Optional[dict] = None
 ):
     db = get_db()
     
@@ -210,7 +210,7 @@ async def complete_training(
     
     # Use update_one with upsert=True to overwrite the latest score for this specific exercise
     # This ensures "what ever the new score will come will be the new score for that level"
-    await db.training_sessions.update_one(
+    await db["training_sessions"].update_one(
         {"user_id": user_id, "exercise_id": exercise_id},
         {"$set": training_data},
         upsert=True
@@ -218,7 +218,7 @@ async def complete_training(
     
     # Update user progress
     if session_data and session_data.get("isCorrect"):
-        await db.user_progress.update_one(
+        await db["user_progress"].update_one(
             {"user_id": user_id, "type": session_data.get("type")},
             {"$set": {
                 "last_completed_level": session_data.get("level"),
@@ -234,7 +234,7 @@ async def complete_training(
 async def get_training_progress(user_id: str = Depends(get_current_user_id)):
     db = get_db()
     # Get all training sessions for this user to see scores
-    sessions = await db.training_sessions.find(
+    sessions = await db["training_sessions"].find(
         {"user_id": user_id},
         {"exercise_id": 1, "fluency_score": 1, "is_correct": 1}
     ).to_list(None)
@@ -270,7 +270,7 @@ async def process_and_store(user_id: str, file_path: str):
             "created_at": datetime.utcnow()
         }
         
-        await db.speech_analysis.insert_one(result)
+        await db["speech_analysis"].insert_one(result)
         
     except Exception:
         logger.exception("Processing error")
